@@ -39,7 +39,21 @@ const WING_ADS = {
   right: [{ img: "", link: "join.html#apply", title: "광고·제휴 문의" }],
 };
 
-const REGIONS =["인천", "서울", "경기", "강원", "충남", "세종", "충북", "경북", "전북", "대전", "대구", "울산", "광주", "전남", "경남", "부산", "제주"];
+/* 메인 화면 포토 갤러리
+   img: 사진 경로(예: "assets/gallery/01.jpg", 가로 4:3 권장). 비워 두면 "사진 준비 중" 칸으로 나옵니다.
+   title: 사진 아래와 확대 화면에 나오는 설명 */
+const GALLERY = [
+  { img: "", title: "창립총회" },
+  { img: "", title: "경영자 아카데미" },
+  { img: "", title: "세미나" },
+  { img: "", title: "업무협약" },
+  { img: "", title: "회원 워크숍" },
+  { img: "", title: "지회 활동" },
+  { img: "", title: "봉사 활동" },
+  { img: "", title: "협회 행사" },
+];
+
+const REGIONS = ["인천", "서울", "경기", "강원", "충남", "세종", "충북", "경북", "전북", "대전", "대구", "울산", "광주", "전남", "경남", "부산", "제주"];
 
 const LOGO = `<img src="assets/logo.webp" width="2000" height="667" alt="${SITE.name} ${SITE.en}">`;
 
@@ -103,6 +117,42 @@ function renderWings() {
     };
     document.body.appendChild(el);
   }
+}
+
+function renderGallery() {
+  const grid = $("#galleryGrid");
+  grid.innerHTML = GALLERY.map((g, i) => g.img
+    ? `<button type="button" class="g-item" data-i="${i}"><img src="${g.img}" alt="${esc(g.title)}" loading="lazy"><span>${esc(g.title)}</span></button>`
+    : `<div class="g-item empty"><i>사진 준비 중</i><span>${esc(g.title)}</span></div>`).join("");
+
+  // 확대 보기
+  const shots = GALLERY.map((g, i) => ({ ...g, i })).filter((g) => g.img);
+  if (!shots.length) return;
+  const box = document.createElement("div");
+  box.className = "lightbox";
+  box.hidden = true;
+  box.innerHTML = `<button type="button" class="lb-close" aria-label="닫기">×</button><button type="button" class="lb-prev" aria-label="이전">‹</button><figure><img alt=""><figcaption></figcaption></figure><button type="button" class="lb-next" aria-label="다음">›</button>`;
+  document.body.appendChild(box);
+  let cur = 0;
+  const show = (n) => {
+    cur = (n + shots.length) % shots.length;
+    $("img", box).src = shots[cur].img;
+    $("img", box).alt = shots[cur].title;
+    $("figcaption", box).textContent = `${shots[cur].title}  (${cur + 1} / ${shots.length})`;
+    box.hidden = false;
+  };
+  grid.onclick = (e) => { const b = e.target.closest("button.g-item"); if (b) show(shots.findIndex((s) => s.i === +b.dataset.i)); };
+  box.onclick = (e) => {
+    if (e.target.closest(".lb-prev")) show(cur - 1);
+    else if (e.target.closest(".lb-next")) show(cur + 1);
+    else if (!e.target.closest("figure")) box.hidden = true;
+  };
+  document.addEventListener("keydown", (e) => {
+    if (box.hidden) return;
+    if (e.key === "Escape") box.hidden = true;
+    if (e.key === "ArrowLeft") show(cur - 1);
+    if (e.key === "ArrowRight") show(cur + 1);
+  });
 }
 
 const thumb = (i, c) => `<div class="thumb t${i % 4}">${esc(c)}</div>`;
@@ -170,6 +220,7 @@ document.addEventListener("DOMContentLoaded", () => {
   renderWings();
   document.querySelectorAll("[data-site]").forEach((el) => (el.textContent = SITE[el.dataset.site]));
   if ($("#hlStage")) renderHome();
+  if ($("#galleryGrid")) renderGallery();
   if ($("#newsBody")) renderNews();
   if ($("#applyForm")) renderJoin();
   // 머리말이 그려진 뒤 #위치로 다시 이동
