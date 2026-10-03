@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>회원안내 | 대한미용경영자협회</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<header id="header"></header>
+
+<div class="page-head"><div class="wrap"><h1>회원안내</h1><p>대한미용경영자협회와 함께하세요</p></div></div>
+
+<main class="page"><div class="wrap">
+  <nav class="lnb">
+    <h3>회원안내</h3>
+    <a href="#guide">가입안내</a>
+    <a href="#benefit">회원혜택</a>
+    <a href="#apply">가입·문의 신청</a>
+  </nav>
+
+  <div class="content">
+    <section id="guide">
+      <h2>가입안내</h2>
+      <table class="tbl">
+        <tr><th>정회원</th><td>협회의 목적에 찬동하고 정해진 회비를 납부한 미용업 경영자</td></tr>
+        <tr><th>일반회원</th><td>협회의 사업과 활동에 참여하는 미용인 및 예비 창업자</td></tr>
+        <tr><th>단체회원</th><td>협회의 목적에 찬동하는 기관 · 기업 · 단체</td></tr>
+        <tr><th>특별·명예회원</th><td>협회 발전에 특별히 기여하였거나 전문성이 인정되는 분</td></tr>
+      </table>
+      <h3>가입 절차</h3>
+      <ol class="steps">
+        <li><b>신청서 제출</b>가입 신청서 작성</li>
+        <li><b>자격 확인</b>사무국 검토</li>
+        <li><b>회비 납부</b>입회비·연회비</li>
+        <li><b>가입 완료</b>회원 혜택 이용</li>
+      </ol>
+      <p class="note" style="margin-top:18px">회원 구분과 회비는 정관 및 회원 규정이 확정되면 그에 맞게 수정해 주세요.</p>
+    </section>
+
+    <section id="benefit">
+      <h2>회원혜택</h2>
+      <div class="grid-3">
+        <div class="tile"><span class="num">01</span><h4>전문가 상담</h4><p>세무 · 노무 · 법률 분야 전문가 상담 연결</p></div>
+        <div class="tile"><span class="num">02</span><h4>교육 참여</h4><p>경영자 아카데미, 세미나, 워크숍 우선 참여</p></div>
+        <div class="tile"><span class="num">03</span><h4>경영 자료</h4><p>각종 서식, 경영 자료, 업계 동향 제공</p></div>
+        <div class="tile"><span class="num">04</span><h4>네트워크</h4><p>지역·업종별 경영자 모임과 정보 교류</p></div>
+        <div class="tile"><span class="num">05</span><h4>제휴 혜택</h4><p>협회 제휴 업체의 제품·서비스 우대</p></div>
+        <div class="tile"><span class="num">06</span><h4>권익 대변</h4><p>현장의 의견을 모아 제도 개선 건의</p></div>
+      </div>
+    </section>
+
+    <section id="apply">
+      <h2>가입·문의 신청</h2>
+      <p>아래 내용을 작성하시면 신청 내용이 정리됩니다. 정리된 내용을 복사해 사무국(<span data-site="email"></span>)으로 보내 주세요.</p>
+      <form class="form" id="applyForm">
+        <label>구분
+          <select name="type"><option>정회원 가입</option><option>일반회원 가입</option><option>단체회원 가입</option><option>경영 상담 신청</option><option>제휴·기타 문의</option></select>
+        </label>
+        <label>성명 <input name="name" required placeholder="홍길동"></label>
+        <label>연락처 <input name="phone" required placeholder="010-0000-0000"></label>
+        <label>매장명 <input name="shop" placeholder="매장명 (선택)"></label>
+        <label class="full">지역 <input name="region" placeholder="예: 서울 강남구 (선택)"></label>
+        <label class="full">문의 내용 <textarea name="msg" rows="5" placeholder="문의하실 내용을 적어 주세요."></textarea></label>
+        <div class="full"><button class="btn" type="submit">신청 내용 정리하기</button></div>
+      </form>
+      <div id="applyResult" hidden style="margin-top:22px">
+        <h3>신청 내용</h3>
+        <div class="form"><div class="full"><textarea id="applyText" rows="8" readonly></textarea></div></div>
+        <p style="margin-top:12px"><button class="btn line" type="button" id="copyBtn">내용 복사</button></p>
+      </div>
+    </section>
+  </div>
+</div></main>
+
+<footer class="foot" id="footer"></footer>
+<script src="assets/site.js"></script>
+</body>
+</html>
