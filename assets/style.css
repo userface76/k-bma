@@ -76,7 +76,9 @@ button { font: inherit; cursor: pointer; }
 /* ---------- 메인 상단 3단 ---------- */
 .intro { padding: 26px 0 10px; }
 .intro .wrap { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 22px; }
-.intro .wrap { grid-template-columns: 1.25fr 1fr 1fr; }
+.hero { padding-top: 26px; }
+.hero img { display: block; width: 100%; height: auto; border-radius: 6px; border: 1px solid var(--line); }
+.intro .wrap { grid-template-columns: 1.5fr 1fr; }
 .slogan-card {
   min-height: 350px; border-radius: 4px; padding: 38px 30px 30px; color: #fff; position: relative; overflow: hidden;
   background: linear-gradient(150deg, #1f4fa8 0%, #14285a 55%, #0d1b40 100%);
@@ -95,7 +97,7 @@ button { font: inherit; cursor: pointer; }
 .box-title { display: flex; align-items: center; justify-content: space-between; font-size: 15px; font-weight: 700; color: var(--ink); padding-bottom: 10px; border-bottom: 1px solid var(--line); }
 .box-title a { font-size: 12px; color: var(--muted); font-weight: 400; }
 .region-card p.guide { text-align: center; color: var(--blue); font-size: 17px; margin: 16px 0 14px; line-height: 1.4; }
-.region-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px; }
+.region-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 7px; }
 .region-grid button {
   border: 1px solid #cfdaf0; background: #f4f7fd; color: var(--ink); border-radius: 4px;
   padding: 9px 0; font-size: 14.5px; font-weight: 600; transition: .15s;
@@ -308,7 +310,8 @@ table.tbl { width: 100%; border-collapse: collapse; border-top: 2px solid var(--
 @media (max-width: 640px) {
   .logo strong { font-size: 20px; }
   .logo svg { width: 48px; height: 48px; }
-  .slogan-card h2 { font-size: 38px; }
+  .hero { padding-top: 16px; }
+  .region-grid { grid-template-columns: repeat(4, 1fr); }
   .edu-card h2 { font-size: 24px; }
   .hl-slide { padding: 26px 20px; }
   .hl-slide h3 { font-size: 22px; }

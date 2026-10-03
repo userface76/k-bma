@@ -3,7 +3,7 @@
 
 const SITE = {
   name: "대한미용경영자협회",
-  en: "KOREA BEAUTY MANAGEMENT ASSOCIATION",
+  en: "KOREA BEAUTY BUSINESS MANAGEMENT ASSOCIATION",
   chair: "조혜연",
   address: "주소 입력 예정",
   tel: "대표전화 입력 예정",
