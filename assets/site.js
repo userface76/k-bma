@@ -33,7 +33,7 @@ const POSTS = [
 
 const REGIONS = ["인천", "서울", "경기", "강원", "충남", "세종", "충북", "경북", "전북", "대전", "대구", "울산", "광주", "전남", "경남", "부산", "제주"];
 
-const LOGO = `<svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="31" fill="#14285a"/><circle cx="32" cy="32" r="25" fill="none" stroke="#c8963e" stroke-width="1.5"/><path d="M20 20v24M20 32l11-12M20 32l12 12" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M38 44V22l5 9 5-9v22" stroke="#c8963e" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>`;
+const LOGO = `<img src="assets/logo.png" width="266" height="105" alt="KBBMA ${SITE.en}">`;
 
 // Cloudflare Pages는 주소에서 .html을 떼므로 다시 붙여서 비교
 const here = (location.pathname.split("/").pop() || "index").replace(/\.html$/, "") + ".html";
@@ -44,7 +44,7 @@ function renderHeader() {
   const today = new Date().toISOString().slice(0, 10);
   $("#header").innerHTML = `
   <div class="top-head"><div class="wrap">
-    <a class="logo" href="index.html">${LOGO}<div><strong>${SITE.name}</strong><span>${SITE.en}</span></div></a>
+    <a class="logo" href="index.html">${LOGO}<strong>${SITE.name}</strong></a>
     <div class="head-banners">
       <a class="head-banner b1" href="support.html#edu"><b>미용 경영자 아카데미</b><small>수강 안내 바로가기 ›</small></a>
       <a class="head-banner b2" href="join.html"><b>회원 가입 안내</b><small>협회와 함께하세요 ›</small></a>
