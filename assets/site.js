@@ -35,7 +35,8 @@ const REGIONS = ["인천", "서울", "경기", "강원", "충남", "세종", "�
 
 const LOGO = `<svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="31" fill="#14285a"/><circle cx="32" cy="32" r="25" fill="none" stroke="#c8963e" stroke-width="1.5"/><path d="M20 20v24M20 32l11-12M20 32l12 12" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M38 44V22l5 9 5-9v22" stroke="#c8963e" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>`;
 
-const here = location.pathname.split("/").pop() || "index.html";
+// Cloudflare Pages는 주소에서 .html을 떼므로 다시 붙여서 비교
+const here = (location.pathname.split("/").pop() || "index").replace(/\.html$/, "") + ".html";
 const $ = (s, p = document) => p.querySelector(s);
 const esc = (s) => s.replace(/[&<>"]/g, (m) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[m]));
 
