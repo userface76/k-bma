@@ -31,7 +31,15 @@ const POSTS = [
   { c: "자료실", t: "미용업 표준 근로계약서 작성 안내", d: "2026-10-03", s: "미용실에서 자주 쓰는 근로계약 형태별 작성 요령을 정리했습니다." },
 ];
 
-const REGIONS = ["인천", "서울", "경기", "강원", "충남", "세종", "충북", "경북", "전북", "대전", "대구", "울산", "광주", "전남", "경남", "부산", "제주"];
+/* 좌우 날개 광고 배너 (화면 폭 1500px 이상에서만 보임)
+   img: 배너 이미지 경로(권장 140×360). 비워 두면 "광고 문의" 자리 표시가 나옵니다.
+   link: 눌렀을 때 이동할 주소,  title: 이미지 설명 */
+const WING_ADS = {
+  left: [{ img: "", link: "join.html#apply", title: "광고·제휴 문의" }],
+  right: [{ img: "", link: "join.html#apply", title: "광고·제휴 문의" }],
+};
+
+const REGIONS =["인천", "서울", "경기", "강원", "충남", "세종", "충북", "경북", "전북", "대전", "대구", "울산", "광주", "전남", "경남", "부산", "제주"];
 
 const LOGO = `<img src="assets/logo.webp" width="2000" height="667" alt="${SITE.name} ${SITE.en}">`;
 
@@ -72,6 +80,29 @@ function renderFooter() {
   </div></div>
   <button class="top-btn" aria-label="맨 위로">↑</button>`;
   $(".top-btn").onclick = () => scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function renderWings() {
+  let closed = {};
+  try { closed = JSON.parse(sessionStorage.getItem("wingClosed") || "{}"); } catch {}
+  for (const side of ["left", "right"]) {
+    const ads = WING_ADS[side] || [];
+    if (!ads.length || closed[side]) continue;
+    const el = document.createElement("aside");
+    el.className = `wing ${side}`;
+    el.setAttribute("aria-label", "광고 배너");
+    el.innerHTML = ads.map((a) => {
+      const ext = /^https?:/.test(a.link) ? ' target="_blank" rel="noopener"' : "";
+      const inner = a.img ? `<img src="${a.img}" alt="${esc(a.title)}">` : `<span class="wing-empty"><b>AD</b>${esc(a.title)}<small>140 × 360</small></span>`;
+      return `<a class="wing-ad" href="${a.link}"${ext}>${inner}</a>`;
+    }).join("") + `<button type="button" class="wing-close">닫기 ×</button>`;
+    el.querySelector(".wing-close").onclick = () => {
+      el.remove();
+      closed[side] = 1;
+      try { sessionStorage.setItem("wingClosed", JSON.stringify(closed)); } catch {}
+    };
+    document.body.appendChild(el);
+  }
 }
 
 const thumb = (i, c) => `<div class="thumb t${i % 4}">${esc(c)}</div>`;
@@ -136,6 +167,7 @@ function renderJoin() {
 document.addEventListener("DOMContentLoaded", () => {
   renderHeader();
   renderFooter();
+  renderWings();
   document.querySelectorAll("[data-site]").forEach((el) => (el.textContent = SITE[el.dataset.site]));
   if ($("#hlStage")) renderHome();
   if ($("#newsBody")) renderNews();

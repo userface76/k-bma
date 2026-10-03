@@ -282,6 +282,19 @@ table.tbl { width: 100%; border-collapse: collapse; border-top: 2px solid var(--
 
 .top-btn { position: fixed; right: 20px; bottom: 20px; width: 44px; height: 44px; border-radius: 50%; border: 0; background: var(--navy); color: #fff; font-size: 18px; box-shadow: 0 4px 12px rgba(0, 0, 0, .2); z-index: 40; }
 
+/* ---------- 좌우 날개 광고 ---------- */
+.wing { position: fixed; top: 230px; width: 140px; z-index: 30; display: none; }
+.wing.left { left: calc(50% - 590px - 160px); }
+.wing.right { right: calc(50% - 590px - 160px); }
+.wing-ad { display: block; margin-bottom: 8px; border-radius: 4px; overflow: hidden; box-shadow: 0 4px 14px rgba(20, 40, 90, .12); }
+.wing-ad img { display: block; width: 100%; height: auto; }
+.wing-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; height: 360px; background: #faf7f1; border: 1px dashed #c9b891; border-radius: 4px; color: #6d5327; font-size: 14px; font-weight: 700; text-align: center; }
+.wing-empty b { font-size: 12px; letter-spacing: 2px; color: #fff; background: var(--accent); padding: 2px 10px; border-radius: 20px; }
+.wing-empty small { font-weight: 400; font-size: 12px; color: var(--muted); }
+.wing-close { display: block; width: 100%; padding: 5px 0; border: 1px solid var(--line); border-radius: 4px; background: #fff; color: var(--muted); font-size: 12px; }
+.wing-close:hover { color: var(--ink); border-color: var(--muted); }
+@media (min-width: 1520px) { .wing { display: block; } }
+
 /* ---------- 반응형 ---------- */
 @media (max-width: 1000px) {
   .head-banners { display: none; }
