@@ -31,11 +31,11 @@ button { font: inherit; cursor: pointer; }
 .wrap { max-width: var(--wrap); margin: 0 auto; padding: 0 20px; }
 
 /* ---------- 상단 ---------- */
-.top-head { padding: 14px 0; background: #faf9f7; }  /* 로고 이미지 바탕색과 맞춤 */
+.top-head { padding: 16px 0; background: #fefefe; }  /* 로고 이미지 바탕색과 맞춤 */
 .top-head .wrap { display: flex; align-items: center; justify-content: space-between; gap: 24px; }
-.logo { display: flex; align-items: center; gap: 18px; }
-.logo img { height: 78px; width: auto; flex: none; display: block; }
-.logo strong { font-size: 24px; font-weight: 800; color: var(--navy); letter-spacing: -0.5px; line-height: 1.2; padding-left: 18px; border-left: 1px solid #d9d3c8; }
+/* 로고 이미지(2000x667)의 바깥 여백을 잘라 내고 글자·심벌 부분만 보이게 함 */
+.logo { display: block; flex: none; width: 314px; height: 78px; overflow: hidden; }
+.logo img { display: block; width: 344px; max-width: none; height: auto; margin: -19px 0 0 -16px; }
 .head-banners { display: flex; gap: 12px; }
 .head-banner {
   display: flex; flex-direction: column; justify-content: center;
@@ -307,9 +307,8 @@ table.tbl { width: 100%; border-collapse: collapse; border-top: 2px solid var(--
   .sub a:hover { background: none; color: #fff; }
 }
 @media (max-width: 640px) {
-  .logo { gap: 12px; }
-  .logo strong { font-size: 17px; padding-left: 12px; }
-  .logo img { height: 58px; }
+  .logo { width: 250px; height: 62px; }
+  .logo img { width: 274px; margin: -15px 0 0 -13px; }
   .hero { padding-top: 16px; }
   .region-grid { grid-template-columns: repeat(4, 1fr); }
   .edu-card h2 { font-size: 24px; }

@@ -33,7 +33,7 @@ const POSTS = [
 
 const REGIONS = ["인천", "서울", "경기", "강원", "충남", "세종", "충북", "경북", "전북", "대전", "대구", "울산", "광주", "전남", "경남", "부산", "제주"];
 
-const LOGO = `<img src="assets/logo.png" width="266" height="105" alt="KBBMA ${SITE.en}">`;
+const LOGO = `<img src="assets/logo.webp" width="2000" height="667" alt="${SITE.name} ${SITE.en}">`;
 
 // Cloudflare Pages는 주소에서 .html을 떼므로 다시 붙여서 비교
 const here = (location.pathname.split("/").pop() || "index").replace(/\.html$/, "") + ".html";
@@ -44,7 +44,7 @@ function renderHeader() {
   const today = new Date().toISOString().slice(0, 10);
   $("#header").innerHTML = `
   <div class="top-head"><div class="wrap">
-    <a class="logo" href="index.html">${LOGO}<strong>${SITE.name}</strong></a>
+    <a class="logo" href="index.html">${LOGO}</a>
     <div class="head-banners">
       <a class="head-banner b1" href="support.html#edu"><b>미용 경영자 아카데미</b><small>수강 안내 바로가기 ›</small></a>
       <a class="head-banner b2" href="join.html"><b>회원 가입 안내</b><small>협회와 함께하세요 ›</small></a>
