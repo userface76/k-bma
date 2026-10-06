@@ -61,10 +61,20 @@
         <label>연락처 <b>*</b><input name="phone" required inputmode="tel" maxlength="13" placeholder="010-0000-0000"></label>
         <label>매장명 <input name="shop" maxlength="60" placeholder="매장명 (선택)"></label>
         <label class="full">지역 <input name="region" maxlength="60" placeholder="예: 서울 강남구 (선택)"></label>
+        <fieldset class="full checks">
+          <legend>관심 분야 <small>(여러 개 선택 가능)</small></legend>
+          <label><input type="checkbox" name="interests" value="경영자 아카데미"> 경영자 아카데미</label>
+          <label><input type="checkbox" name="interests" value="자격증 과정"> 자격증 과정</label>
+          <label><input type="checkbox" name="interests" value="세미나·워크숍"> 세미나·워크숍</label>
+          <label><input type="checkbox" name="interests" value="경영 상담(세무·노무·법률)"> 경영 상담(세무·노무·법률)</label>
+          <label><input type="checkbox" name="interests" value="창업 지원"> 창업 지원</label>
+          <label><input type="checkbox" name="interests" value="제휴·광고"> 제휴·광고</label>
+          <label><input type="checkbox" name="interests" value="기타"> 기타</label>
+        </fieldset>
         <label class="full">문의 내용 <textarea name="msg" rows="5" maxlength="1000" placeholder="문의하실 내용을 적어 주세요."></textarea></label>
         <input class="hp" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
         <div class="full agree"><label><input type="checkbox" name="agree" required> <span>[필수] 개인정보 수집·이용에 동의합니다.</span></label>
-          <p class="muted">수집 항목: 성명, 연락처, 매장명, 지역, 문의 내용 / 이용 목적: 회원 가입 및 문의 접수·상담·안내 / 보유 기간: 처리 목적 달성 시까지. 동의하지 않을 수 있으며, 이 경우 신청 접수가 제한됩니다. 자세한 내용은 <a href="privacy.html" target="_blank">개인정보처리방침</a>을 확인해 주세요.</p></div>
+          <p class="muted">수집 항목: 성명, 연락처, 매장명, 지역, 관심 분야, 문의 내용 / 이용 목적: 회원 가입 및 문의 접수·상담·안내 / 보유 기간: 처리 목적 달성 시까지. 동의하지 않을 수 있으며, 이 경우 신청 접수가 제한됩니다. 자세한 내용은 <a href="privacy.html" target="_blank">개인정보처리방침</a>을 확인해 주세요.</p></div>
         <div class="full"><button class="btn" type="submit">신청하기</button> <p class="form-msg" id="applyMsg" hidden></p></div>
       </form>
       <div id="applyResult" hidden style="margin-top:22px">

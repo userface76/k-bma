@@ -294,7 +294,12 @@ table.tbl { width: 100%; border-collapse: collapse; border-top: 2px solid var(--
 .form-msg.ok { color: #1a7f4b; }
 .form-msg.bad { color: #b3261e; }
 .form label b { color: #b3261e; }
-.form .hp { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
+.form .checks { border: 1px solid #cfd5e0; border-radius: 4px; padding: 12px 16px 14px; margin: 0; display: flex; flex-wrap: wrap; gap: 8px 22px; }
+.form .checks legend { font-size: 14px; font-weight: 700; color: var(--ink); padding: 0 6px; }
+.form .checks legend small { font-weight: 400; color: var(--muted); }
+.form .checks label { display: flex; align-items: center; gap: 7px; font-weight: 500; font-size: 15px; color: var(--text); cursor: pointer; }
+.form .checks input { width: auto; margin: 0; }
+.form .hp {position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
 .form button:disabled { opacity: .6; cursor: wait; }
 .form .agree label {display: flex; gap: 8px; align-items: center; font-weight: 700; }
 .form .agree input { width: auto; margin: 0; }
@@ -323,6 +328,7 @@ table.tbl { width: 100%; border-collapse: collapse; border-top: 2px solid var(--
 .login-box .btn { display: block; padding: 14px; font-size: 16px; border-radius: 6px; margin: 22px 0 18px; }
 
 .admin-page .wrap { grid-template-columns: minmax(0, 1fr); }
+.admin-page .content { min-width: 0; }
 .admin-page .bar { flex-wrap: wrap; gap: 10px; }
 .admin-page .bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; font-size: 14.5px; }
 .scroll { overflow-x: auto; }

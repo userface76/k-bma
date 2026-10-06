@@ -162,11 +162,11 @@ async function renderAdmin() {
     async apps() {
       const { applications: rows } = await api("admin/applications");
       body.innerHTML = `<p class="bar"><span>전체 ${rows.length}건 · 신규 ${rows.filter((r) => r.status === "new").length}건</span><a class="btn line sm" href="/api/admin/export?type=applications">엑셀(CSV) 내려받기</a></p>
-        <div class="scroll"><table class="tbl board"><thead><tr><th>번호</th><th>구분</th><th>성명</th><th>연락처</th><th>매장·지역</th><th>내용</th><th>접수일</th><th>상태</th><th>관리자 메모</th><th></th></tr></thead><tbody>${rows.map((r) => `<tr data-id="${r.id}" class="${r.status === "new" ? "is-new" : ""}">
-          <td>${r.id}</td><td>${esc(r.type)}</td><td class="t">${esc(r.name)}</td><td><a href="tel:${esc(r.phone)}">${esc(r.phone)}</a></td><td>${esc(r.shop)}<br>${esc(r.region)}</td><td class="memo">${esc(r.message)}</td><td>${when(r.created_at)}</td>
+        <div class="scroll"><table class="tbl board"><thead><tr><th>번호</th><th>구분</th><th>성명</th><th>연락처</th><th>매장·지역</th><th>관심 분야</th><th>내용</th><th>접수일</th><th>상태</th><th>관리자 메모</th><th></th></tr></thead><tbody>${rows.map((r) => `<tr data-id="${r.id}" class="${r.status === "new" ? "is-new" : ""}">
+          <td>${r.id}</td><td>${esc(r.type)}</td><td class="t">${esc(r.name)}</td><td><a href="tel:${esc(r.phone)}">${esc(r.phone)}</a></td><td>${esc(r.shop)}<br>${esc(r.region)}</td><td class="memo">${esc(r.interests).replace(/, /g, "<br>")}</td><td class="memo">${esc(r.message)}</td><td>${when(r.created_at)}</td>
           <td><select data-f="status">${Object.entries(APP_KO).map(([k, v]) => `<option value="${k}" ${k === r.status ? "selected" : ""}>${v}</option>`).join("")}</select></td>
           <td><input data-f="note" maxlength="300" value="${esc(r.note)}" placeholder="메모"></td>
-          <td><button type="button" class="btn line sm danger" data-del>삭제</button></td></tr>`).join("") || `<tr><td colspan="10">접수된 신청이 없습니다.</td></tr>`}</tbody></table></div>`;
+          <td><button type="button" class="btn line sm danger" data-del>삭제</button></td></tr>`).join("") || `<tr><td colspan="11">접수된 신청이 없습니다.</td></tr>`}</tbody></table></div>`;
       body.onchange = async (e) => {
         const tr = e.target.closest("tr[data-id]");
         if (!tr) return;

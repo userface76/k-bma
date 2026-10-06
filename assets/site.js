@@ -233,14 +233,14 @@ function renderJoin() {
       const btn = $("button[type=submit]", form);
       btn.disabled = true;
       try {
-        await api("applications", { method: "POST", body: { ...Object.fromEntries(f), message: f.get("msg"), agree: form.agree.checked } });
+        await api("applications", { method: "POST", body: { ...Object.fromEntries(f), interests: f.getAll("interests"), message: f.get("msg"), agree: form.agree.checked } });
         form.reset();
         say("접수되었습니다. 사무국에서 확인 후 연락드리겠습니다.", true);
       } catch (err) { say(err.message); }
       btn.disabled = false;
       return;
     }
-    const text = [`[${SITE.name} 가입·문의 신청]`, `구분: ${f.get("type")}`, `성명: ${f.get("name")}`, `연락처: ${f.get("phone")}`, `매장명: ${f.get("shop") || "-"}`, `지역: ${f.get("region") || "-"}`, `내용: ${f.get("msg") || "-"}`].join("\n");
+    const text = [`[${SITE.name} 가입·문의 신청]`, `구분: ${f.get("type")}`, `성명: ${f.get("name")}`, `연락처: ${f.get("phone")}`, `매장명: ${f.get("shop") || "-"}`, `지역: ${f.get("region") || "-"}`, `관심 분야: ${f.getAll("interests").join(", ") || "-"}`,`내용: ${f.get("msg") || "-"}`].join("\n");
     $("#applyResult").hidden = false;
     $("#applyText").value = text;
     $("#applyResult").scrollIntoView({ behavior: "smooth", block: "center" });

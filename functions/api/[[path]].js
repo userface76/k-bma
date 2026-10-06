@@ -14,6 +14,7 @@ const STATE_COOKIE = "kbbma_state";
 const SESSION_DAYS = 30;
 const ADMIN_HOURS = 12;
 const APP_TYPES = ["정회원 가입", "일반회원 가입", "단체회원 가입", "경영 상담 신청", "제휴·기타 문의"];
+const APP_FIELDS = ["경영자 아카데미", "자격증 과정", "세미나·워크숍", "경영 상담(세무·노무·법률)", "창업 지원", "제휴·광고", "기타"];   // join.html의 관심 분야와 같게 유지
 const APP_STATUS = ["new", "progress", "done"];
 const POSITIONS = ["원장(대표)", "점장·매니저", "디자이너", "스태프·인턴", "예비 창업자", "기타"];
 const COURSE_STATUS = ["preparing", "open", "closed"];
@@ -63,6 +64,8 @@ let ready = null;
 function init(db) {
   ready ??= (async () => {
     await db.batch(SCHEMA.map((s) => db.prepare(s)));
+    // 나중에 추가된 열. 이미 있으면 오류가 나므로 무시합니다.
+    await db.prepare("ALTER TABLE applications ADD COLUMN interests TEXT").run().catch(() => {});
     const { n } = await db.prepare("SELECT COUNT(*) AS n FROM courses").first();
     if (!n) {
       const ins = db.prepare("INSERT INTO courses (title, summary, schedule, place, status, sort, created_at) VALUES (?, ?, '일정 추후 공지', '장소 추후 공지', 'preparing', ?, ?)");
@@ -121,8 +124,9 @@ async function submitApplication(req, db) {
   const ip = await ipHash(req);
   const { n } = await db.prepare("SELECT COUNT(*) AS n FROM applications WHERE ip_hash = ? AND created_at > ?").bind(ip, ago(60)).first();
   if (n >= 5) return fail(429, "신청이 너무 많습니다. 잠시 후 다시 시도해 주세요.");
-  await db.prepare("INSERT INTO applications (type, name, phone, shop, region, message, ip_hash, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)")
-    .bind(type, name, phone, clean(b.shop, 60), clean(b.region, 60), clean(b.message, 1000), ip, now()).run();
+  const interests = APP_FIELDS.filter((x) => Array.isArray(b.interests) && b.interests.includes(x)).join(", ");
+  await db.prepare("INSERT INTO applications (type, name, phone, shop, region, interests, message, ip_hash, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)")
+    .bind(type, name, phone, clean(b.shop, 60), clean(b.region, 60), interests, clean(b.message, 1000), ip, now()).run();
   return json({ ok: true });
 }
 
@@ -275,7 +279,7 @@ function csv(rows, columns) {
 }
 const STATUS_KO = { applied: "신청", confirmed: "확정", cancelled: "취소" };
 const APP_KO = { new: "신규", progress: "처리 중", done: "완료" };
-const APP_SQL = "SELECT id, type, name, phone, shop, region, message, status, note, created_at, updated_at FROM applications ORDER BY id DESC";
+const APP_SQL = "SELECT id, type, name, phone, shop, region, interests, message, status, note, created_at, updated_at FROM applications ORDER BY id DESC";
 
 async function admin(req, url, parts, db) {
   const [res, id] = parts, method = req.method;
@@ -324,7 +328,7 @@ async function admin(req, url, parts, db) {
       text = csv((await db.prepare(MEMBER_SQL).all()).results, [["id", "번호"], ["name", "성명"], ["nickname", "카카오 닉네임"], ["phone", "휴대폰"], ["email", "이메일"], ["shop", "매장명"], ["region", "지역"], ["birth", "생년월일"], ["position", "직책"], ["career_years", "경력(년)"], ["created_at", "가입일시(UTC)"], ["last_login_at", "최근 로그인(UTC)"]]);
     } else if (type === "applications") {
       name = "applications";
-      text = csv((await db.prepare(APP_SQL).all()).results, [["id", "번호"], ["type", "구분"], ["name", "성명"], ["phone", "연락처"], ["shop", "매장명"], ["region", "지역"], ["message", "내용"], [(r) => APP_KO[r.status], "상태"], ["note", "관리자 메모"], ["created_at", "접수일시(UTC)"]]);
+      text = csv((await db.prepare(APP_SQL).all()).results, [["id", "번호"], ["type", "구분"], ["name", "성명"], ["phone", "연락처"], ["shop", "매장명"], ["region", "지역"], ["interests", "관심 분야"], ["message", "내용"], [(r) => APP_KO[r.status], "상태"], ["note", "관리자 메모"], ["created_at", "접수일시(UTC)"]]);
     } else if (type === "enrollments") {
       name = "enrollments";
       text = csv((await db.prepare(ENROLL_SQL).all()).results, [["id", "번호"], ["title", "과정"], ["name", "성명"], ["phone", "휴대폰"], ["shop", "매장명"], ["region", "지역"], ["position", "직책"], [(r) => STATUS_KO[r.status], "상태"], [(r) => (r.paid ? "확인" : "미확인"), "입금"], ["fee", "수강료"], ["memo", "메모"], ["created_at", "신청일시(UTC)"]]);
