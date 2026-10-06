@@ -9,6 +9,7 @@ const SITE = {
   tel: "대표전화 입력 예정",
   fax: "팩스 입력 예정",
   email: "이메일 입력 예정",
+  bank: "입금 계좌 입력 예정",   // 수강료 입금 계좌 (예: ○○은행 000-000-000000 대한미용경영자협회)
 };
 
 const MENU = [
@@ -60,7 +61,29 @@ const LOGO = `<img src="assets/logo.webp" width="2000" height="667" alt="${SITE.
 // Cloudflare Pages는 주소에서 .html을 떼므로 다시 붙여서 비교
 const here = (location.pathname.split("/").pop() || "index").replace(/\.html$/, "") + ".html";
 const $ = (s, p = document) => p.querySelector(s);
-const esc = (s) => s.replace(/[&<>"]/g, (m) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[m]));
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (m) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m]));
+
+// 회원·수강신청 서버(/api) 호출. 서버가 없는 환경에서는 오류를 던집니다.
+async function api(path, opt = {}) {
+  const r = await fetch("/api/" + path, { method: opt.method || "GET", credentials: "same-origin", headers: opt.body ? { "content-type": "application/json" } : undefined, body: opt.body ? JSON.stringify(opt.body) : undefined });
+  if (!(r.headers.get("content-type") || "").includes("json")) throw new Error("회원 서비스를 준비하고 있습니다.");
+  const d = await r.json();
+  if (!r.ok) throw new Error(d.error || "처리 중 오류가 발생했습니다.");
+  return d;
+}
+const ME = api("me").catch(() => null);   // { user, loginReady, positions } 또는 null(서버 없음)
+const loginUrl = (next = location.pathname + location.search) => "/api/auth/kakao/login?next=" + encodeURIComponent(next);
+
+async function renderAuth() {
+  const slot = $("#authSlot");
+  const me = await ME;
+  // 카카오 로그인(아카데미 수강 신청)은 아직 열지 않았습니다. KAKAO_REST_KEY를 설정하면 로그인 메뉴가 나타납니다.
+  if (!me || (!me.user && !me.loginReady)) { slot.innerHTML = `<a href="join.html#apply">회원가입</a>`; return; }
+  if (!me.user) { slot.innerHTML = `<a href="mypage.html">로그인</a>`; return; }
+  const u = me.user;
+  slot.innerHTML = `<a href="mypage.html"><b>${esc(u.name || u.nickname || "회원")}</b>님</a>${u.admin ? ` · <a href="admin.html">관리자</a>` : ""} · <button type="button" id="logoutBtn">로그아웃</button>`;
+  $("#logoutBtn").onclick = async () => { await api("logout", { method: "POST" }).catch(() => {}); location.href = "index.html"; };
+}
 
 function renderHeader() {
   const today = new Date().toISOString().slice(0, 10);
@@ -73,7 +96,7 @@ function renderHeader() {
     </div>
   </div></div>
   <div class="util"><div class="wrap"><span>UPDATED. ${today}</span>
-    <ul><li><a href="join.html#apply">회원가입</a></li><li><a href="news.html">공지사항</a></li><li><a href="about.html#location">오시는 길</a></li></ul>
+    <ul><li id="authSlot"></li><li><a href="news.html">공지사항</a></li><li><a href="about.html#location">오시는 길</a></li></ul>
   </div></div>
   <nav class="gnb"><div class="wrap">
     <ul class="gnb-list">${MENU.map((m) => `<li class="${m.h.split("#")[0] === here || m.s.some((x) => x[1] === here) ? "on" : ""}"><a href="${m.h}">${m.t}</a><div class="sub">${m.s.map((x) => `<a href="${x[1]}">${x[0]}</a>`).join("")}</div></li>`).join("")}</ul>
@@ -81,12 +104,13 @@ function renderHeader() {
     <button class="menu-btn" aria-label="메뉴 열기">☰</button>
   </div></nav>`;
   $(".menu-btn").onclick = () => $(".gnb").classList.toggle("open");
+  renderAuth();
 }
 
 function renderFooter() {
   $("#footer").innerHTML = `
   <div class="foot-links"><div class="wrap"><ul>
-    <li><a href="about.html">협회소개</a></li><li><a href="join.html">회원안내</a></li><li><a href="news.html">공지사항</a></li><li><a href="join.html#apply">제휴·문의</a></li><li><a href="about.html#location">오시는 길</a></li>
+    <li><a href="about.html">협회소개</a></li><li><a href="join.html">회원안내</a></li><li><a href="news.html">공지사항</a></li><li><a href="join.html#apply">제휴·문의</a></li><li><a href="about.html#location">오시는 길</a></li><li><a href="privacy.html"><b>개인정보처리방침</b></a></li>
   </ul></div></div>
   <div class="wrap foot-info"><strong>${SITE.name}</strong><div>
     <p>이사장 : ${SITE.chair} &nbsp;|&nbsp; ${SITE.address}<br>${SITE.tel} &nbsp;|&nbsp; ${SITE.fax} &nbsp;|&nbsp; ${SITE.email}</p>
@@ -199,9 +223,23 @@ function renderNews() {
 }
 
 function renderJoin() {
-  $("#applyForm").onsubmit = (e) => {
+  const form = $("#applyForm"), msg = $("#applyMsg");
+  form.onsubmit = async (e) => {
     e.preventDefault();
-    const f = new FormData(e.target);
+    const f = new FormData(form);
+    const say = (text, ok) => { msg.textContent = text; msg.className = "form-msg " + (ok ? "ok" : "bad"); msg.hidden = false; };
+    // 서버에 접수. 서버가 준비되지 않은 환경에서는 아래의 "내용 복사" 방식으로 안내합니다.
+    if (await ME) {
+      const btn = $("button[type=submit]", form);
+      btn.disabled = true;
+      try {
+        await api("applications", { method: "POST", body: { ...Object.fromEntries(f), message: f.get("msg"), agree: form.agree.checked } });
+        form.reset();
+        say("접수되었습니다. 사무국에서 확인 후 연락드리겠습니다.", true);
+      } catch (err) { say(err.message); }
+      btn.disabled = false;
+      return;
+    }
     const text = [`[${SITE.name} 가입·문의 신청]`, `구분: ${f.get("type")}`, `성명: ${f.get("name")}`, `연락처: ${f.get("phone")}`, `매장명: ${f.get("shop") || "-"}`, `지역: ${f.get("region") || "-"}`, `내용: ${f.get("msg") || "-"}`].join("\n");
     $("#applyResult").hidden = false;
     $("#applyText").value = text;
