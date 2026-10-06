@@ -16,6 +16,9 @@ const ADMIN_HOURS = 12;
 const APP_TYPES = ["정회원 가입", "일반회원 가입", "단체회원 가입", "경영 상담 신청", "제휴·기타 문의"];
 const APP_FIELDS = ["경영자 아카데미", "자격증 과정", "세미나·워크숍", "경영 상담(세무·노무·법률)", "창업 지원", "제휴·광고", "기타"];   // join.html의 관심 분야와 같게 유지
 const APP_STATUS = ["new", "progress", "done"];
+const BOARD = ["공지사항", "협회뉴스", "경영칼럼", "자료실"];
+const FILE_EXT = ["pdf", "hwp", "hwpx", "doc", "docx", "xls", "xlsx", "ppt", "pptx", "zip", "jpg", "jpeg", "png", "webp"];
+const FILE_MAX = 1500000;   // 첨부 1개당 최대 약 1.5MB (D1 한 칸의 한도 2MB 이내)
 const POSITIONS = ["원장(대표)", "점장·매니저", "디자이너", "스태프·인턴", "예비 창업자", "기타"];
 const COURSE_STATUS = ["preparing", "open", "closed"];
 const ENROLL_STATUS = ["applied", "confirmed", "cancelled"];
@@ -47,6 +50,14 @@ const SCHEMA = [
      status TEXT NOT NULL DEFAULT 'new', note TEXT,
      ip_hash TEXT, created_at TEXT NOT NULL, updated_at TEXT)`,
   `CREATE TABLE IF NOT EXISTS login_attempts (ip_hash TEXT NOT NULL, at TEXT NOT NULL)`,
+  `CREATE TABLE IF NOT EXISTS posts (
+     id INTEGER PRIMARY KEY AUTOINCREMENT,
+     category TEXT NOT NULL, title TEXT NOT NULL, body TEXT NOT NULL DEFAULT '',
+     pinned INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL, updated_at TEXT)`,
+  `CREATE TABLE IF NOT EXISTS files (
+     id INTEGER PRIMARY KEY AUTOINCREMENT,
+     post_id INTEGER, name TEXT NOT NULL, size INTEGER NOT NULL, data BLOB NOT NULL, created_at TEXT NOT NULL)`,
+  `CREATE INDEX IF NOT EXISTS idx_files_post ON files(post_id)`,
   `CREATE INDEX IF NOT EXISTS idx_app_ip ON applications(ip_hash, created_at)`,
   `CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id)`,
   `CREATE INDEX IF NOT EXISTS idx_enroll_course ON enrollments(course_id)`,
@@ -60,8 +71,28 @@ const SEED_COURSES = [
   ["우리 매장 알리기", "지역 검색, SNS, 리뷰 관리"],
 ];
 
+// 게시판이 비어 있을 때 한 번 넣는 첫 글. 이후에는 관리자 페이지에서 작성·수정합니다.
+const SEED_POSTS = [
+  { category: "자료실", title: "회원가입 신청서 양식", body: "대한미용경영자협회 회원가입 신청서 양식입니다.\n아래 첨부 파일을 내려받아 작성한 뒤 협회 사무국으로 제출해 주세요.\n\n홈페이지의 회원안내 > 가입·문의 신청에서 온라인으로도 신청하실 수 있습니다.",
+    files: [["회원가입 신청서.docx", "/assets/files/kbbma-membership-application.docx"], ["회원가입 신청서.pdf", "/assets/files/kbbma-membership-application.pdf"]] },
+  { category: "공지사항", title: "정회원·일반회원 모집 안내", body: "미용실을 운영하시거나 창업을 준비 중인 분이라면 누구나 가입하실 수 있습니다.\n\n가입 절차와 회원 혜택은 회원안내 메뉴에서 확인해 주세요. 가입 신청은 홈페이지의 가입·문의 신청 또는 자료실의 회원가입 신청서 양식으로 하실 수 있습니다." },
+  { category: "공지사항", title: "대한미용경영자협회 홈페이지를 열었습니다", body: "미용 경영자 여러분과 더 가까이 소통하기 위해 협회 공식 홈페이지를 열었습니다.\n\n협회 소식과 교육 일정, 경영 자료를 이곳에서 안내해 드리겠습니다. 많은 관심 부탁드립니다." },
+];
+
+async function seedPosts(db, env, origin) {
+  for (const p of [...SEED_POSTS].reverse()) {
+    const r = await db.prepare("INSERT INTO posts (category, title, body, created_at) VALUES (?, ?, ?, ?)").bind(p.category, p.title, p.body, now()).run();
+    for (const [name, path] of p.files || []) {
+      const res = await env.ASSETS?.fetch(new Request(origin + path)).catch(() => null);   // 사이트에 함께 올린 파일을 첨부로 등록
+      if (!res?.ok) continue;
+      const buf = await res.arrayBuffer();
+      if (buf.byteLength && buf.byteLength <= FILE_MAX) await db.prepare("INSERT INTO files (post_id, name, size, data, created_at) VALUES (?, ?, ?, ?, ?)").bind(r.meta.last_row_id, name, buf.byteLength, buf, now()).run();
+    }
+  }
+}
+
 let ready = null;
-function init(db) {
+function init(db, env, origin) {
   ready ??= (async () => {
     await db.batch(SCHEMA.map((s) => db.prepare(s)));
     // 나중에 추가된 열. 이미 있으면 오류가 나므로 무시합니다.
@@ -71,6 +102,7 @@ function init(db) {
       const ins = db.prepare("INSERT INTO courses (title, summary, schedule, place, status, sort, created_at) VALUES (?, ?, '일정 추후 공지', '장소 추후 공지', 'preparing', ?, ?)");
       await db.batch(SEED_COURSES.map(([t, s], i) => ins.bind(t, s, i + 1, now())));
     }
+    if (!(await db.prepare("SELECT COUNT(*) AS n FROM posts").first()).n) await seedPosts(db, env, origin);
   })().catch((e) => { ready = null; throw e; });
   return ready;
 }
@@ -128,6 +160,55 @@ async function submitApplication(req, db) {
   await db.prepare("INSERT INTO applications (type, name, phone, shop, region, interests, message, ip_hash, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)")
     .bind(type, name, phone, clean(b.shop, 60), clean(b.region, 60), interests, clean(b.message, 1000), ip, now()).run();
   return json({ ok: true });
+}
+
+// ───────── 게시판 (공지사항·협회뉴스·경영칼럼·자료실) ─────────
+async function listPosts(db) {
+  const { results } = await db.prepare("SELECT p.id, p.category, p.title, substr(p.body, 1, 160) AS summary, p.pinned, p.created_at, (SELECT COUNT(*) FROM files f WHERE f.post_id = p.id) AS files FROM posts p ORDER BY p.pinned DESC, p.id DESC LIMIT 300").all();
+  return json({ posts: results, categories: BOARD });
+}
+
+async function getPost(id, db) {
+  const post = await db.prepare("SELECT id, category, title, body, pinned, created_at, updated_at FROM posts WHERE id = ?").bind(id).first();
+  if (!post) return fail(404, "글을 찾을 수 없습니다.");
+  const { results } = await db.prepare("SELECT id, name, size FROM files WHERE post_id = ? ORDER BY id").bind(id).all();
+  return json({ post: { ...post, files: results } });
+}
+
+async function downloadFile(id, db) {
+  const f = await db.prepare("SELECT name, data FROM files WHERE id = ? AND post_id IS NOT NULL").bind(id).first();
+  if (!f) return fail(404, "파일을 찾을 수 없습니다.");
+  const bytes = f.data instanceof ArrayBuffer ? new Uint8Array(f.data) : Uint8Array.from(f.data);
+  // 브라우저가 내용을 실행하지 않고 항상 파일로 저장하도록 응답
+  return new Response(bytes, { headers: { "content-type": "application/octet-stream", "content-disposition": `attachment; filename*=UTF-8''${encodeURIComponent(f.name)}`, "x-content-type-options": "nosniff", "cache-control": "public, max-age=300" } });
+}
+
+function postInput(b) {
+  const title = clean(b.title, 120);
+  if (!title || !BOARD.includes(b.category)) return null;
+  return [b.category, title, typeof b.body === "string" ? b.body.trim().slice(0, 20000) : "", b.pinned ? 1 : 0];
+}
+
+async function attachFiles(postId, ids, db) {
+  const keep = (Array.isArray(ids) ? ids : []).map((x) => int(x, 0, 1e9)).filter(Boolean).slice(0, 10);
+  const marks = keep.map(() => "?").join(",");
+  await db.batch([
+    keep.length ? db.prepare(`DELETE FROM files WHERE post_id = ? AND id NOT IN (${marks})`).bind(postId, ...keep) : db.prepare("DELETE FROM files WHERE post_id = ?").bind(postId),
+    ...(keep.length ? [db.prepare(`UPDATE files SET post_id = ? WHERE post_id IS NULL AND id IN (${marks})`).bind(postId, ...keep)] : []),
+  ]);
+}
+
+async function uploadFile(req, url, db) {
+  const name = clean(url.searchParams.get("name"), 100).replace(/[\\/:*?"<>|\x00-\x1f]/g, "_");
+  const ext = name.includes(".") ? name.split(".").pop().toLowerCase() : "";
+  if (!name || !FILE_EXT.includes(ext)) return fail(400, `올릴 수 없는 파일 형식입니다. (${FILE_EXT.join(", ")})`);
+  const buf = await req.arrayBuffer();
+  if (!buf.byteLength) return fail(400, "빈 파일입니다.");
+  if (buf.byteLength > FILE_MAX) return fail(413, "파일이 너무 큽니다. 1.5MB 이하만 올릴 수 있습니다.");
+  const t = now();
+  await db.prepare("DELETE FROM files WHERE post_id IS NULL AND created_at < ?").bind(ago(24 * 60)).run();   // 글에 붙지 않고 남은 파일 정리
+  const r = await db.prepare("INSERT INTO files (name, size, data, created_at) VALUES (?, ?, ?, ?)").bind(name, buf.byteLength, buf, t).run();
+  return json({ file: { id: r.meta.last_row_id, name, size: buf.byteLength } });
 }
 
 // ───────── 관리자 비밀번호 로그인 ─────────
@@ -283,6 +364,20 @@ const APP_SQL = "SELECT id, type, name, phone, shop, region, interests, message,
 
 async function admin(req, url, parts, db) {
   const [res, id] = parts, method = req.method;
+  if (res === "posts" && method === "POST" || res === "posts" && id && method === "PUT") {
+    const b = await req.json().catch(() => ({})), v = postInput(b);
+    if (!v) return fail(400, "분류와 제목을 입력해 주세요.");
+    let postId = int(id, 0, 1e9);
+    if (method === "POST") postId = (await db.prepare("INSERT INTO posts (category, title, body, pinned, created_at) VALUES (?, ?, ?, ?, ?)").bind(...v, now()).run()).meta.last_row_id;
+    else if (!(await db.prepare("UPDATE posts SET category = ?, title = ?, body = ?, pinned = ?, updated_at = ? WHERE id = ?").bind(...v, now(), postId).run()).meta.changes) return fail(404, "글을 찾을 수 없습니다.");
+    await attachFiles(postId, b.fileIds, db);
+    return json({ ok: true, id: postId });
+  }
+  if (res === "posts" && id && method === "DELETE") {
+    await db.batch([db.prepare("DELETE FROM files WHERE post_id = ?").bind(int(id, 0, 1e9)), db.prepare("DELETE FROM posts WHERE id = ?").bind(int(id, 0, 1e9))]);
+    return json({ ok: true });
+  }
+  if (res === "files" && !id && method === "POST") return uploadFile(req, url, db);
   if (res === "applications" && !id && method === "GET") return json({ applications: (await db.prepare(APP_SQL).all()).results });
   if (res === "applications" && id && method === "POST") {
     const b = await req.json().catch(() => ({}));
@@ -348,8 +443,11 @@ export async function onRequest({ request, env }) {
     // 다른 사이트에서 보낸 변경 요청 차단
     if (method !== "GET" && method !== "HEAD" && request.headers.get("origin") !== url.origin) return fail(403, "허용되지 않은 요청입니다.");
     const db = env.DB;
-    await init(db);
+    await init(db, env, url.origin);
 
+    if (route === "posts" && method === "GET") return listPosts(db);
+    if (parts[0] === "posts" && parts[1] && method === "GET") return getPost(int(parts[1], 0, 1e9), db);
+    if (parts[0] === "files" && parts[1] && method === "GET") return downloadFile(int(parts[1], 0, 1e9), db);
     if (route === "auth/kakao/login" && method === "GET") return kakaoLogin(url, env);
     if (route === "auth/kakao/callback" && method === "GET") return kakaoCallback(request, url, env, db);
 

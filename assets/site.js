@@ -20,7 +20,8 @@ const MENU = [
   { t: "회원안내", h: "join.html", s: [["가입안내", "join.html#guide"], ["회원혜택", "join.html#benefit"], ["가입·문의 신청", "join.html#apply"]] },
 ];
 
-/* 게시글: 아래는 화면 구성을 위한 예시 문안입니다. 실제 소식으로 교체하세요. */
+/* 게시글은 관리자 페이지(admin.html)의 "게시판"에서 작성하며 DB에 저장됩니다.
+   아래 POSTS는 서버에 연결할 수 없을 때만 대신 보여 주는 예시 문안입니다. */
 const POSTS = [
   { c: "공지사항", t: "대한미용경영자협회 홈페이지를 열었습니다", d: "2026-10-03", s: "미용 경영자 여러분과 더 가까이 소통하기 위해 협회 공식 홈페이지를 열었습니다. 협회 소식과 교육 일정, 경영 자료를 이곳에서 안내해 드립니다." },
   { c: "공지사항", t: "정회원·일반회원 모집 안내", d: "2026-10-03", s: "미용실을 운영하시거나 창업을 준비 중인 분이라면 누구나 가입하실 수 있습니다. 가입 절차와 회원 혜택은 회원안내 메뉴에서 확인해 주세요." },
@@ -28,8 +29,6 @@ const POSTS = [
   { c: "협회뉴스", t: "미용 경영자 아카데미 과정 개설 준비", d: "2026-10-03", s: "매출·원가 관리, 직원 채용과 노무, 고객 관리, 마케팅까지 미용실 운영에 꼭 필요한 주제로 교육 과정을 준비하고 있습니다." },
   { c: "경영칼럼", t: "미용실 손익, 한 장으로 정리하는 법", d: "2026-10-03", s: "매출만 보고 있으면 남는 돈이 보이지 않습니다. 재료비·인건비·임대료를 한 장의 표로 정리해 매달 점검하는 방법을 소개합니다." },
   { c: "경영칼럼", t: "직원이 오래 일하는 매장의 공통점", d: "2026-10-03", s: "근로계약서 작성부터 교육, 성과 보상까지. 이직률을 낮추는 매장 운영의 기본을 짚어 봅니다." },
-  { c: "자료실", t: "회원가입 신청서 양식", d: "2026-10-03", s: "협회 회원가입 신청서 양식입니다. 작성 후 사무국으로 제출해 주세요." },
-  { c: "자료실", t: "미용업 표준 근로계약서 작성 안내", d: "2026-10-03", s: "미용실에서 자주 쓰는 근로계약 형태별 작성 요령을 정리했습니다." },
 ];
 
 /* 좌우 날개 광고 배너 (화면 폭 1500px 이상에서만 보임)
@@ -72,7 +71,13 @@ async function api(path, opt = {}) {
   return d;
 }
 const ME = api("me").catch(() => null);   // { user, loginReady, positions } 또는 null(서버 없음)
-const loginUrl = (next = location.pathname + location.search) => "/api/auth/kakao/login?next=" + encodeURIComponent(next);
+// 게시글은 서버(DB)에서 가져오고, 서버가 없는 환경에서만 맨 위의 POSTS를 씁니다.
+const kdate = (iso) => new Date(iso).toLocaleDateString("sv-SE", { timeZone: "Asia/Seoul" });
+const POSTS_READY = api("posts").then((d) => d.posts.map((p) => ({ id: p.id, c: p.category, t: p.title, s: p.summary, d: kdate(p.created_at), files: p.files, pinned: p.pinned })), () => POSTS);
+const postUrl = (p) => (p.id ? `news.html?id=${p.id}` : `news.html?c=${p.c}`);
+const linkify = (text) => esc(text).replace(/https?:\/\/[^\s<]+/g, (u) => `<a href="${u}" target="_blank" rel="noopener">${u}</a>`);
+const fileSize = (n) => (n >= 1048576 ? (n / 1048576).toFixed(1) + "MB" : Math.max(1, Math.round(n / 1024)) + "KB");
+const loginUrl =(next = location.pathname + location.search) => "/api/auth/kakao/login?next=" + encodeURIComponent(next);
 
 async function renderAuth() {
   const slot = $("#authSlot");
@@ -86,7 +91,7 @@ async function renderAuth() {
 }
 
 function renderHeader() {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = kdate(new Date());
   $("#header").innerHTML = `
   <div class="top-head"><div class="wrap">
     <a class="logo" href="index.html">${LOGO}</a>
@@ -181,7 +186,7 @@ function renderGallery() {
 
 const thumb = (i, c) => `<div class="thumb t${i % 4}">${esc(c)}</div>`;
 
-function renderHome() {
+async function renderHome() {
   // 지역 선택
   const grid = $("#regionGrid"), info = $("#regionInfo");
   grid.innerHTML = REGIONS.map((r) => `<button type="button">${r}</button>`).join("");
@@ -192,34 +197,61 @@ function renderHome() {
   };
 
   // 헤드라인
-  const top = POSTS.slice(0, 4);
-  $("#hlStage").innerHTML = top.map((p, i) => `<a class="hl-slide ${i ? "" : "on"}" href="news.html?c=${p.c}"><em>${p.c}</em><h3>${esc(p.t)}</h3><p>${esc(p.s)}</p></a>`).join("");
+  const posts = await POSTS_READY;
+  const top = posts.slice(0, 4);
+  $("#hlStage").innerHTML = top.map((p, i) => `<a class="hl-slide ${i ? "" : "on"}" href="${postUrl(p)}"><em>${esc(p.c)}</em><h3>${esc(p.t)}</h3><p>${esc(p.s)}</p></a>`).join("");
   $("#hlList").innerHTML = `<h4>HEADLINE</h4>` + top.map((p, i) => `<button type="button" class="${i ? "" : "on"}">${esc(p.t)}</button>`).join("");
   const slides = [...document.querySelectorAll(".hl-slide")], btns = [...document.querySelectorAll("#hlList button")];
   let cur = 0;
   const show = (n) => { cur = n; slides.forEach((s, i) => s.classList.toggle("on", i === n)); btns.forEach((b, i) => b.classList.toggle("on", i === n)); };
   btns.forEach((b, i) => (b.onmouseenter = b.onclick = () => show(i)));
-  setInterval(() => show((cur + 1) % slides.length), 5000);
+  if (slides.length > 1) setInterval(() => show((cur + 1) % slides.length), 5000);
+  if (!slides.length) $(".headline").style.display = "none";
 
-  // 카드 · 목록 · 사이드
-  $("#cards").innerHTML = POSTS.slice(0, 3).map((p, i) => `<a class="card" href="news.html?c=${p.c}">${thumb(i, p.c)}<div class="body"><span class="cat">${p.c}</span><h4>${esc(p.t)}</h4><p>${esc(p.s)}</p></div></a>`).join("");
-  $("#postList").innerHTML = POSTS.slice(3).map((p, i) => `<li>${thumb(i + 3, p.c)}<a href="news.html?c=${p.c}"><h4>${esc(p.t)}</h4><p>${esc(p.s)}</p><span class="meta">${p.d} | ${p.c}</span></a></li>`).join("");
-  $("#sideNotice").innerHTML = POSTS.filter((p) => p.c === "공지사항").map((p) => `<li><a href="news.html?c=공지사항">${esc(p.t)}</a></li>`).join("");
-  $("#sideColumn").innerHTML = POSTS.filter((p) => p.c === "경영칼럼").map((p) => `<li><a href="news.html?c=경영칼럼">${esc(p.t)}</a></li>`).join("");
+  // 카드 · 목록 · 사이드 (글이 적으면 빈 구역은 숨김)
+  const rest = posts.slice(3), side = (c) => posts.filter((p) => p.c === c).slice(0, 5);
+  const fill = (el, html, wrap) => { el.innerHTML = html; if (!html) (wrap || el).style.display = "none"; };
+  fill($("#cards"), posts.slice(0, 3).map((p, i) => `<a class="card" href="${postUrl(p)}">${thumb(i, p.c)}<div class="body"><span class="cat">${esc(p.c)}</span><h4>${esc(p.t)}</h4><p>${esc(p.s)}</p></div></a>`).join(""));
+  fill($("#postList"), rest.map((p, i) => `<li>${thumb(i + 3, p.c)}<a href="${postUrl(p)}"><h4>${esc(p.t)}</h4><p>${esc(p.s)}</p><span class="meta">${p.d} | ${esc(p.c)}</span></a></li>`).join(""));
+  if (!rest.length) $("#postList").previousElementSibling.style.display = "none";
+  for (const [id, c] of [["#sideNotice", "공지사항"], ["#sideColumn", "경영칼럼"]])
+    fill($(id), side(c).map((p) => `<li><a href="${postUrl(p)}">${esc(p.t)}</a></li>`).join(""), $(id).closest(".side-box"));
 }
 
-function renderNews() {
+async function renderNews() {
   const cats = ["전체", "공지사항", "협회뉴스", "경영칼럼", "자료실"];
-  const want = new URLSearchParams(location.search).get("c");
-  let cur = cats.includes(want) ? want : "전체";
+  const q = new URLSearchParams(location.search), id = Number(q.get("id"));
+  if (id) return renderPost(id);
+  const posts = await POSTS_READY;
+  let cur = cats.includes(q.get("c")) ? q.get("c") : "전체";
   const tabs = $("#newsTabs"), body = $("#newsBody");
   const draw = () => {
     tabs.innerHTML = cats.map((c) => `<button type="button" class="${c === cur ? "on" : ""}">${c}</button>`).join("");
-    const rows = POSTS.filter((p) => cur === "전체" || p.c === cur);
-    body.innerHTML = rows.map((p, i) => `<tr><td>${rows.length - i}</td><td>${p.c}</td><td class="t">${esc(p.t)}<small>${esc(p.s)}</small></td><td>${p.d}</td></tr>`).join("");
+    const rows = posts.filter((p) => cur === "전체" || p.c === cur);
+    body.innerHTML = rows.map((p, i) => `<tr><td>${p.pinned ? `<span class="badge applied">공지</span>` : rows.length - i}</td><td>${esc(p.c)}</td>
+      <td class="t">${p.id ? `<a href="${postUrl(p)}">${esc(p.t)}</a>` : esc(p.t)}${p.files ? ` <span class="clip" title="첨부 파일">📎</span>` : ""}<small>${esc(p.s)}</small></td><td>${p.d}</td></tr>`).join("")
+      || `<tr><td colspan="4" style="padding:36px 0">등록된 글이 없습니다.</td></tr>`;
   };
-  tabs.onclick = (e) => { if (e.target.tagName === "BUTTON") { cur = e.target.textContent; draw(); } };
+  tabs.onclick = (e) => { if (e.target.tagName === "BUTTON") { cur = e.target.textContent; history.replaceState(null, "", cur === "전체" ? "news.html" : `news.html?c=${encodeURIComponent(cur)}`); draw(); } };
   draw();
+}
+
+async function renderPost(id) {
+  const view = $("#newsView");
+  $("#newsList").hidden = true;
+  view.hidden = false;
+  try {
+    const { post: p } = await api(`posts/${id}`);
+    document.title = `${p.title} | ${SITE.name}`;
+    view.innerHTML = `<article class="post">
+      <header><span class="cat">${esc(p.category)}</span><h2>${esc(p.title)}</h2><p class="meta">${kdate(p.created_at)}</p></header>
+      <div class="post-body">${linkify(p.body)}</div>
+      ${p.files.length ? `<ul class="post-files"><li class="head">첨부 파일</li>${p.files.map((f) => `<li><a href="/api/files/${f.id}" download>📎 ${esc(f.name)}</a> <small>${fileSize(f.size)}</small></li>`).join("")}</ul>` : ""}
+      <p><a class="btn line" href="news.html?c=${encodeURIComponent(p.category)}">목록</a></p>
+    </article>`;
+  } catch (err) {
+    view.innerHTML = `<p class="note">${esc(err.message)}</p><p><a class="btn line" href="news.html">목록</a></p>`;
+  }
 }
 
 function renderJoin() {

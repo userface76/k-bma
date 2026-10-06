@@ -154,11 +154,69 @@ async function renderAdmin() {
     return;
   }
   const APP_KO = { new: "신규", progress: "처리 중", done: "완료" };
-  box.innerHTML = `<div class="bar"><div class="tabs" id="adminTabs" style="margin:0"><button class="on" data-tab="apps">가입·문의 신청</button>${me.loginReady ? `<button data-tab="enroll">수강 신청</button><button data-tab="members">회원</button><button data-tab="courses">과정 관리</button>` : ""}</div>
+  box.innerHTML = `<div class="bar"><div class="tabs" id="adminTabs" style="margin:0"><button class="on" data-tab="apps">가입·문의 신청</button><button data-tab="board">게시판</button>${me.loginReady ? `<button data-tab="enroll">수강 신청</button><button data-tab="members">회원</button><button data-tab="courses">과정 관리</button>` : ""}</div>
     <button type="button" class="btn line sm" id="adminLogout">관리자 로그아웃</button></div><div id="adminBody"></div>`;
   $("#adminLogout").onclick = async () => { await api("admin/logout", { method: "POST" }).catch(() => {}); await api("logout", { method: "POST" }).catch(() => {}); location.reload(); };
   const body = $("#adminBody");
   const tabs = {
+    // 게시판: 공지사항·협회뉴스·경영칼럼·자료실 글 작성과 첨부
+    async board(editId) {
+      const { posts, categories } = await api("posts");
+      if (editId === undefined) {
+        body.innerHTML = `<p class="bar"><span>전체 ${posts.length}건</span><button type="button" class="btn sm" data-new>새 글 쓰기</button></p>
+          <div class="scroll"><table class="tbl board"><thead><tr><th>번호</th><th>분류</th><th>제목</th><th>첨부</th><th>등록일</th><th></th></tr></thead><tbody>${posts.map((p) => `<tr>
+            <td>${p.pinned ? `<span class="badge applied">공지</span>` : p.id}</td><td>${esc(p.category)}</td><td class="t" style="text-align:left"><a href="news.html?id=${p.id}" target="_blank">${esc(p.title)}</a></td>
+            <td>${p.files || ""}</td><td>${when(p.created_at)}</td><td><button type="button" class="btn line sm" data-edit="${p.id}">수정</button></td></tr>`).join("") || `<tr><td colspan="6">등록된 글이 없습니다.</td></tr>`}</tbody></table></div>`;
+        body.onclick = (e) => {
+          if (e.target.closest("[data-new]")) tabs.board(0);
+          const b = e.target.closest("[data-edit]");
+          if (b) tabs.board(Number(b.dataset.edit));
+        };
+        return;
+      }
+      const p = editId ? (await api(`posts/${editId}`)).post : { category: categories[0], title: "", body: "", pinned: 0, files: [] };
+      let attached = [...p.files];
+      body.innerHTML = `<form class="form post-edit" style="grid-template-columns:200px 1fr">
+        <label>분류<select name="category">${categories.map((c) => `<option ${c === p.category ? "selected" : ""}>${esc(c)}</option>`).join("")}</select></label>
+        <label>제목<input name="title" required maxlength="120" value="${esc(p.title)}"></label>
+        <label class="full">내용<textarea name="body" maxlength="20000" placeholder="내용을 입력해 주세요. 줄바꿈은 그대로 표시되고, http로 시작하는 주소는 자동으로 링크가 됩니다.">${esc(p.body)}</textarea></label>
+        <div class="full"><label>첨부 파일 <small class="muted">(1개당 1.5MB 이하, 최대 10개 · pdf, hwp, docx, xlsx, pptx, zip, jpg, png)</small><input type="file" name="upload" multiple></label>
+          <ul class="attached" id="attached"></ul></div>
+        <label class="full pin"><input type="checkbox" name="pinned" ${p.pinned ? "checked" : ""}> <span>목록 맨 위에 고정 (공지)</span></label>
+        <div class="full"><button class="btn" type="submit">${editId ? "수정 저장" : "등록"}</button> <button class="btn line" type="button" data-back>목록으로</button>
+          ${editId ? `<button class="btn line danger" type="button" data-del style="float:right">글 삭제</button>` : ""} <p class="form-msg" hidden></p></div>
+      </form>`;
+      const f = $("form", body), msg = $(".form-msg", f);
+      const drawFiles = () => ($("#attached").innerHTML = attached.map((a) => `<li>${esc(a.name)} <small>${fileSize(a.size)}</small><button type="button" data-rm="${a.id}" title="첨부 삭제">×</button></li>`).join(""));
+      drawFiles();
+      f.upload.onchange = async () => {
+        for (const file of f.upload.files) {
+          if (attached.length >= 10) { notice(msg, "첨부는 최대 10개까지 가능합니다."); break; }
+          if (file.size > 1500000) { notice(msg, `${file.name}: 1.5MB를 넘어 올릴 수 없습니다.`); continue; }
+          const r = await fetch("/api/admin/files?name=" + encodeURIComponent(file.name), { method: "POST", body: file, credentials: "same-origin" });
+          const d = await r.json().catch(() => ({}));
+          if (r.ok) { attached.push(d.file); msg.hidden = true; } else notice(msg, `${file.name}: ${d.error || "올리지 못했습니다."}`);
+          drawFiles();
+        }
+        f.upload.value = "";
+      };
+      body.onclick = async (e) => {
+        const rm = e.target.closest("[data-rm]");
+        if (rm) { attached = attached.filter((a) => a.id !== Number(rm.dataset.rm)); drawFiles(); }
+        if (e.target.closest("[data-back]")) tabs.board();
+        const del = e.target.closest("[data-del]");
+        if (del) {
+          if (!del.dataset.sure) { del.dataset.sure = 1; del.textContent = "한 번 더 누르면 삭제"; return; }
+          await api(`admin/posts/${editId}`, { method: "DELETE" }).then(() => tabs.board(), (err) => notice(msg, err.message));
+        }
+      };
+      body.onsubmit = async (e) => {
+        e.preventDefault();
+        const data = { category: f.category.value, title: f.title.value, body: f.body.value, pinned: f.pinned.checked, fileIds: attached.map((a) => a.id) };
+        try { await api(editId ? `admin/posts/${editId}` : "admin/posts", { method: editId ? "PUT" : "POST", body: data }); await tabs.board(); }
+        catch (err) { notice(msg, err.message); }
+      };
+    },
     async apps() {
       const { applications: rows } = await api("admin/applications");
       body.innerHTML = `<p class="bar"><span>전체 ${rows.length}건 · 신규 ${rows.filter((r) => r.status === "new").length}건</span><a class="btn line sm" href="/api/admin/export?type=applications">엑셀(CSV) 내려받기</a></p>

@@ -239,6 +239,16 @@ button { font: inherit; cursor: pointer; }
 .tile p { font-size: 14.5px; margin: 0; color: var(--text); }
 .tile.blue { background: var(--blue-light); border-color: #cfdaf0; }
 
+.content { min-width: 0; }
+.org-wrap {overflow-x: auto; border: 1px solid var(--line); border-radius: 6px; padding: 22px 10px; background: #fff; }
+.org-chart { display: block; width: 100%; min-width: 620px; height: auto; }
+.org-chart text { font-family: inherit; font-size: 19px; font-weight: 700; fill: var(--navy); text-anchor: middle; dominant-baseline: central; }
+.org-chart .panel { fill: #f6f9fe; stroke: #d6e2f7; }
+.org-chart .pill { fill: #dbe7fb; }
+.org-chart .ln { fill: none; stroke: #8fb0e3; stroke-width: 1.5; }
+.org-chart .box rect { fill: #eaf1fc; stroke: #a9c3ec; }
+.org-chart .chief { fill: var(--navy); }
+.org-chart .chief-t { fill: #fff; font-size: 21px; }
 .org { text-align: center; }
 .org .node { display: inline-block; padding: 12px 30px; border-radius: 4px; background: var(--blue-light); border: 1px solid #cfdaf0; font-weight: 700; color: var(--ink); min-width: 150px; }
 .org .node.top { background: var(--navy); color: #fff; border-color: var(--navy); }
@@ -281,6 +291,25 @@ table.tbl { width: 100%; border-collapse: collapse; border-top: 2px solid var(--
 .foot-info .copy { margin-top: 8px; color: #7b8496; font-size: 12.5px; }
 
 .top-btn { position: fixed; right: 20px; bottom: 20px; width: 44px; height: 44px; border-radius: 50%; border: 0; background: var(--navy); color: #fff; font-size: 18px; box-shadow: 0 4px 12px rgba(0, 0, 0, .2); z-index: 40; }
+
+/* ---------- 게시글 보기 ---------- */
+.tbl.board td.t a { color: var(--ink); text-decoration: none; }
+.tbl.board td.t a:hover { color: var(--blue); text-decoration: underline; }
+.clip { font-size: 13px; }
+.post header { border-bottom: 2px solid var(--navy); padding-bottom: 14px; margin-bottom: 24px; }
+.post header h2 { border: 0; margin: 4px 0 6px; padding: 0; font-size: 26px; line-height: 1.35; }
+.post-body { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 16.5px; line-height: 1.8; min-height: 120px; margin-bottom: 30px; }
+.post-files { border: 1px solid var(--line); border-radius: 6px; padding: 6px 18px; margin-bottom: 26px; background: var(--bg); }
+.post-files li { padding: 9px 0; border-bottom: 1px dashed var(--line); }
+.post-files li:last-child { border: 0; }
+.post-files li.head { font-size: 13px; font-weight: 700; color: var(--muted); }
+.post-files small { color: var(--muted); margin-left: 6px; }
+.post-edit textarea { min-height: 260px; line-height: 1.7; }
+.post-edit .attached { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 0; }
+.post-edit .attached li { background: var(--blue-light); border-radius: 20px; padding: 4px 6px 4px 12px; font-size: 13.5px; font-weight: 500; }
+.post-edit .attached button { border: 0; background: none; color: #b3261e; font-weight: 700; padding: 0 6px; }
+.post-edit .pin { display: flex; gap: 8px; align-items: center; }
+.post-edit .pin input { width: auto; margin: 0; }
 
 /* ---------- 회원 · 수강 신청 ---------- */
 .util button { background: none; border: 0; padding: 0; color: inherit; font-size: inherit; }
